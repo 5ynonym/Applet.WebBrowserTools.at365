@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Applet.WebBrowserTools/Applet.WebBrowserTools.csproj" />
+  <Project Path="Applet.WebBrowserTools.RegressionTests/Applet.WebBrowserTools.RegressionTests.csproj" />
+</Solution>

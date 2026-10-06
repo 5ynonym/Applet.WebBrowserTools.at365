@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>Applet.WebBrowserTools.at365</AssemblyName>
+    <RootNamespace>Applets.WebBrowserTools</RootNamespace>
+    <Version>0.1.0</Version>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <AppDockRoot Condition="'$(AppDockRoot)' == ''">$(MSBuildThisFileDirectory)../../AppDock.at365</AppDockRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(AppDockRoot)/dotnet/AppDock.SDK/AppDock.SDK.csproj" />
+    <InternalsVisibleTo Include="Applet.WebBrowserTools.RegressionTests" />
+  </ItemGroup>
+</Project>
