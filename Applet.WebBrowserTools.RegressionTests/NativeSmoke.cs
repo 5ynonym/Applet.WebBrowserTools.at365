@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Applets.WebBrowserTools;
 
-internal static class NativeSmoke
+internal static partial class NativeSmoke
 {
     private delegate nint WindowProc(nint hwnd, uint message, nint wParam, nint lParam);
     public static void Run()
@@ -40,16 +40,26 @@ internal static class NativeSmoke
             Pump(platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+T"), browsers, default));
             if (!messages.SequenceEqual(new[] { 1, 2, 3 }) || !keys.Contains('T') || (GetAsyncKeyState(0x11) & 0x8000) != 0)
                 throw new Exception("Message or key delivery/release mismatch");
-            if (Cursor.Position != cursor || GetForegroundWindow() != hwnd) throw new Exception("Cursor/focus changed");
+            if (Cursor.Position != cursor || GetForegroundWindow() != hwnd)
+                throw new Exception($"Cursor/focus changed: cursor {cursor} -> {Cursor.Position}; foreground {hwnd} -> {GetForegroundWindow()}");
+            var beforeRapid = keys.Count(k => k == 'T');
+            var rapid = Stopwatch.StartNew();
+            for (var i = 0; i < 20; i++) Pump(platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+T"), browsers, default, hwnd));
+            if (keys.Count(k => k == 'T') != beforeRapid + 20 || rapid.ElapsedMilliseconds >= 1000)
+                throw new Exception($"Gesture SendInput burst delayed or lost: {rapid.ElapsedMilliseconds}ms");
+            Console.WriteLine($"PASS 20 gesture key sends in {rapid.ElapsedMilliseconds}ms");
+            keybd_event(0x11, 0, 0, 0); Application.DoEvents();
             var pending = platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+N"), browsers, default);
             using var other = new Form { Text = "Foreground switch fixture" };
             other.Show(); other.Activate(); Application.DoEvents();
+            keybd_event(0x11, 0, 2, 0);
             var rejected = false;
             try { Pump(pending); } catch (InvalidOperationException) { rejected = true; }
             if (!rejected || keys.Contains('N')) throw new Exception("Foreground switch was not rejected");
             Console.WriteLine("PASS native WM_APPCOMMAND 1/2/3, SendInput Ctrl+T, modifier release, cursor/focus preservation and foreground-change cancellation");
         }
         finally {
+            keybd_event(0x11, 0, 2, 0);
             if (hwnd != 0) DestroyWindow(hwnd);
             UnregisterClass(name, cls.Instance);
             if (previous != 0) SetForegroundWindow(previous);
@@ -66,6 +76,7 @@ internal static class NativeSmoke
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(nint hwnd);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
+    [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scan, uint flags, nuint extra);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint hwnd, out uint pid);
     [DllImport("user32.dll")] private static extern bool AttachThreadInput(uint from, uint to, bool attach);
     [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();

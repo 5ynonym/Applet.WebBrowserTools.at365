@@ -8,7 +8,7 @@ namespace Applets.WebBrowserTools;
 
 internal interface IBrowserPlatform
 {
-    Task ExecuteAsync(int? appCommand, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token);
+    Task ExecuteAsync(int? appCommand, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token, nint expectedTarget = 0);
 }
 
 internal sealed class BrowserPlatform : IBrowserPlatform
@@ -26,10 +26,12 @@ internal sealed class BrowserPlatform : IBrowserPlatform
     internal static bool IsBrowser(string process, string windowClass, IReadOnlySet<string> browsers) =>
         browsers.Contains(process) && windowClass.StartsWith("Chrome_WidgetWin_", StringComparison.Ordinal);
 
-    public async Task ExecuteAsync(int? appCommand, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token)
+    public async Task ExecuteAsync(int? appCommand, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token, nint expectedTarget = 0)
     {
         token.ThrowIfCancellationRequested();
         var target = Target(browsers);
+        if (expectedTarget != 0 && target != expectedTarget)
+            throw new InvalidOperationException("ジェスチャーを開始したブラウザが最前面ではないため送信を中止しました。");
         if (appCommand is int command)
         {
             // Chromium checks current modifier state for browser commands as well.
@@ -38,23 +40,48 @@ internal sealed class BrowserPlatform : IBrowserPlatform
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "ブラウザへメッセージを送信できませんでした。");
             if (handled == 0) throw new InvalidOperationException("ブラウザが操作メッセージを処理しませんでした。");
         }
-        else await SendAsync(target, chord ?? throw new ArgumentNullException(nameof(chord)), token);
+        else await SendAsync(target, chord ?? throw new ArgumentNullException(nameof(chord)), token, expectedTarget == 0);
     }
     private static async Task WaitForRelease(nint target, KeyChord? chord, CancellationToken token)
     {
         var started = Environment.TickCount64;
-        do
+        while (HeldModifiers.Any(Pressed) || (chord is not null && Pressed(chord.Key)))
         {
             await Task.Delay(25, token);
             if (GetForegroundWindow() != target || !IsWindowVisible(target))
                 throw new InvalidOperationException("最前面のウィンドウが変わったため送信を中止しました。");
             if (Environment.TickCount64 - started >= 2000)
                 throw new InvalidOperationException("修飾キーを離してから再実行してください。");
-        } while (HeldModifiers.Any(Pressed) || (chord is not null && Pressed(chord.Key)));
+        }
         token.ThrowIfCancellationRequested();
+        if (!IsCurrentTarget(target))
+            throw new InvalidOperationException("最前面のウィンドウが変わったため送信を中止しました。");
     }
     private static bool Pressed(int key) => (GetAsyncKeyState(key) & 0x8000) != 0;
     private static nint Target(IReadOnlySet<string> browsers)
+        => ForegroundTarget(browsers).Window;
+
+    internal static BrowserTarget? TryGestureTarget(IReadOnlySet<string> browsers, GesturePoint point)
+    {
+        try
+        {
+            var target = ForegroundTarget(browsers);
+            return IsPointOnTarget(target.Window, point) ? target : null;
+        }
+        catch (Exception error) when (error is InvalidOperationException or ArgumentException or Win32Exception) { return null; }
+    }
+    internal static bool IsPointOnTarget(nint target, GesturePoint point) =>
+        GetAncestor(WindowFromPoint(point), 2) == target;
+    internal static bool IsCurrentTarget(nint target) => GetForegroundWindow() == target && IsWindowVisible(target);
+    internal static GesturePoint WindowCenter(nint target)
+    {
+        if (!GetWindowRect(target, out var rect)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        return new((rect.Left + rect.Right) / 2, (rect.Top + rect.Bottom) / 2);
+    }
+    [StructLayout(LayoutKind.Sequential)] private struct WindowRect { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool GetWindowRect(nint window, out WindowRect rect);
+
+    private static BrowserTarget ForegroundTarget(IReadOnlySet<string> browsers)
     {
         var window = GetForegroundWindow();
         if (window == 0 || !IsWindowVisible(window)) throw new InvalidOperationException("ブラウザを最前面にしてください。");
@@ -63,11 +90,11 @@ internal sealed class BrowserPlatform : IBrowserPlatform
         var name = new StringBuilder(256);
         if (GetClassName(window, name, name.Capacity) == 0 || !IsBrowser(process.ProcessName, name.ToString(), browsers))
             throw new InvalidOperationException("対象のChromiumブラウザを最前面にしてください。対象プロセス名はApplet設定で変更できます。");
-        return window;
+        return new(window, process.ProcessName + ".exe");
     }
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern int GetClassName(nint window, StringBuilder name, int capacity);
     [DllImport("user32.dll", SetLastError = true)] private static extern nint SendMessageTimeout(nint window, uint message, nint wParam, nint lParam, uint flags, uint timeout, out nuint result);
-    private static async Task SendAsync(nint target, KeyChord chord, CancellationToken token)
+    private static async Task SendAsync(nint target, KeyChord chord, CancellationToken token, bool guardHostCommand)
     {
         await WaitForRelease(target, chord, token);
         var events = new List<Input>();
@@ -86,7 +113,7 @@ internal sealed class BrowserPlatform : IBrowserPlatform
             throw new InvalidOperationException($"キーを送信できませんでした（{sent}/{events.Count}, Win32={error}）。管理者権限のアプリには送信が制限されます。");
         }
         // Keep the command in flight while Windows dispatches any matching global hotkey.
-        await Task.Delay(150, token);
+        if (guardHostCommand) await Task.Delay(150, token);
     }
     private static Input KeyEvent(ushort key, bool up, bool extended) => new() {
         Type = 1, Data = new InputUnion { Keyboard = new KeyboardInput { Key = key, Flags = (up ? 2u : 0) | (extended ? 1u : 0) } }
@@ -100,6 +127,8 @@ internal sealed class BrowserPlatform : IBrowserPlatform
     [StructLayout(LayoutKind.Sequential)] private struct KeyboardInput { public ushort Key, Scan; public uint Flags, Time; public nuint Extra; }
     [StructLayout(LayoutKind.Sequential)] private struct MouseInput { public int X, Y; public uint Data, Flags, Time; public nuint Extra; }
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern nint WindowFromPoint(GesturePoint point);
+    [DllImport("user32.dll")] private static extern nint GetAncestor(nint window, uint flags);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(nint window);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint window, out uint process);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);

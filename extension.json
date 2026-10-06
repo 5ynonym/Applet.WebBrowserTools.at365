@@ -3,12 +3,11 @@
     "id":  "at365.web-browser-tools",
     "name":  "Applet.WebBrowserTools.at365",
     "displayName":  "WebBrowserTools.at365",
-    "version":  "0.1.0",
+    "version":  "0.2.3",
     "minimumHostVersion":  "0.6.0",
-    "runtime":  "dotnet",
-    "entry":  "Applet.WebBrowserTools.at365.dll",
-    "type":  "Applets.WebBrowserTools.WebBrowserToolsApplet",
-    "description":  "Chromiumブラウザのタブ・履歴・再読み込み・ウィンドウ操作。",
+    "runtime":  "native",
+    "entry":  "Applet.WebBrowserTools.at365.exe",
+    "description":  "Chromiumブラウザの操作と右ボタンによる上下左右のマウスジェスチャー。",
     "capabilities":  [
                          "ui",
                          "settings",
@@ -67,6 +66,516 @@
                          "default":  "chrome, msedge, brave, vivaldi, opera, chromium, thorium",
                          "description":  "カンマ区切り。最前面のChromiumウィンドウに限って操作します。",
                          "type":  "string"
+                     },
+                     {
+                         "title":  "マウスジェスチャーを有効にする",
+                         "key":  "gestures.enabled",
+                         "default":  true,
+                         "description":  "最前面の対象ブラウザで右ボタンを押しながら上下左右へ移動。方向転換するとキャンセル。",
+                         "type":  "boolean"
+                     },
+                     {
+                         "default":  "restore-tab",
+                         "description":  "右ボタンを離すと実行します。保存後すぐ反映されます。",
+                         "type":  "select",
+                         "key":  "gestures.up",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "ジェスチャー：上"
+                     },
+                     {
+                         "default":  "reload",
+                         "description":  "右ボタンを離すと実行します。保存後すぐ反映されます。",
+                         "type":  "select",
+                         "key":  "gestures.down",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "ジェスチャー：下"
+                     },
+                     {
+                         "default":  "back",
+                         "description":  "右ボタンを離すと実行します。保存後すぐ反映されます。",
+                         "type":  "select",
+                         "key":  "gestures.left",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "ジェスチャー：左"
+                     },
+                     {
+                         "default":  "forward",
+                         "description":  "右ボタンを離すと実行します。保存後すぐ反映されます。",
+                         "type":  "select",
+                         "key":  "gestures.right",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "ジェスチャー：右"
+                     },
+                     {
+                         "default":  "previous-tab",
+                         "description":  "右ボタンを押している間、ホイール1刻みごとに実行します。",
+                         "type":  "select",
+                         "key":  "gestures.wheel-up",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "ホイール：上"
+                     },
+                     {
+                         "default":  "next-tab",
+                         "description":  "右ボタンを押している間、ホイール1刻みごとに実行します。",
+                         "type":  "select",
+                         "key":  "gestures.wheel-down",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "ホイール：下"
+                     },
+                     {
+                         "maximum":  5000,
+                         "title":  "ホイールのディレイ時間(ms)",
+                         "key":  "gestures.wheel-delay-ms",
+                         "type":  "number",
+                         "description":  "ホイール上下に共通の最小実行間隔。0で固定待機なし。間隔内の入力は捨て、操作を後追いしません（0～5000ms、整数）。",
+                         "default":  0,
+                         "step":  10,
+                         "minimum":  0
+                     },
+                     {
+                         "default":  "close-tab",
+                         "description":  "右ボタンを押している間、左ボタンを押すと実行します。",
+                         "type":  "select",
+                         "key":  "gestures.click-left",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "クリック：左"
+                     },
+                     {
+                         "default":  "new-tab",
+                         "description":  "右ボタンを押している間、中ボタンを押すと実行します。",
+                         "type":  "select",
+                         "key":  "gestures.click-middle",
+                         "options":  [
+                                         {
+                                             "value":  "none",
+                                             "label":  "割り当てなし"
+                                         },
+                                         {
+                                             "value":  "close-tab",
+                                             "label":  "タブを閉じる"
+                                         },
+                                         {
+                                             "value":  "back",
+                                             "label":  "戻る"
+                                         },
+                                         {
+                                             "value":  "forward",
+                                             "label":  "進む"
+                                         },
+                                         {
+                                             "value":  "reload",
+                                             "label":  "リロード"
+                                         },
+                                         {
+                                             "value":  "super-reload",
+                                             "label":  "スーパーリロード"
+                                         },
+                                         {
+                                             "value":  "toggle-fullscreen",
+                                             "label":  "全画面を切り替え"
+                                         },
+                                         {
+                                             "value":  "new-tab",
+                                             "label":  "新しいタブを開く"
+                                         },
+                                         {
+                                             "value":  "new-window",
+                                             "label":  "新しいウィンドウを開く"
+                                         },
+                                         {
+                                             "value":  "previous-tab",
+                                             "label":  "前のタブへ"
+                                         },
+                                         {
+                                             "value":  "next-tab",
+                                             "label":  "次のタブへ"
+                                         },
+                                         {
+                                             "value":  "restore-tab",
+                                             "label":  "閉じたタブを復元"
+                                         }
+                                     ],
+                         "title":  "クリック：中"
+                     },
+                     {
+                         "default":  "gesture-start",
+                         "description":  "表示位置を決めてからウィンドウを表示します。",
+                         "type":  "select",
+                         "key":  "gestures.indicator-position",
+                         "options":  [
+                                         {
+                                             "value":  "gesture-start",
+                                             "label":  "ジェスチャー開始地点"
+                                         },
+                                         {
+                                             "value":  "browser-center",
+                                             "label":  "対象ブラウザーの中央"
+                                         }
+                                     ],
+                         "title":  "待機表示の位置"
+                     },
+                     {
+                         "maximum":  1,
+                         "title":  "待機表示の不透明度",
+                         "key":  "gestures.indicator-opacity",
+                         "type":  "number",
+                         "description":  "小さいほど薄く表示します（0.1～1.0）。",
+                         "default":  0.45,
+                         "step":  0.05,
+                         "minimum":  0.1
+                     },
+                     {
+                         "maximum":  500,
+                         "title":  "ジェスチャーの移動距離(px)",
+                         "key":  "gestures.distance",
+                         "type":  "number",
+                         "description":  "この距離を超えた移動で方向を認識します。方向転換にも同じ距離を使用します（5～500px、整数）。",
+                         "default":  50,
+                         "step":  5,
+                         "minimum":  5
                      },
                      {
                          "title":  "タブを閉じる：送信キー",
