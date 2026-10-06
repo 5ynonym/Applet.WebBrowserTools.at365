@@ -2,6 +2,7 @@
     "apiVersion":  1,
     "id":  "at365.web-browser-tools",
     "name":  "Applet.WebBrowserTools.at365",
+    "displayName":  "WebBrowserTools.at365",
     "version":  "0.1.0",
     "minimumHostVersion":  "0.6.0",
     "runtime":  "dotnet",
