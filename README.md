@@ -2,16 +2,26 @@
 
 AppDock用のChromiumブラウザ操作・マウスジェスチャーApplet。Windows x64 / AppDock 0.6.0以降が必要です。v0.2.3は.NET 10/WPFを含む単一EXEで、追加の.NETランタイムやブラウザ拡張のインストールは不要です。
 
+## 導入・更新
+
+1. AppDockをトレイの「終了」から完全終了します。
+2. 配布物の `extension.json`、`Applet.WebBrowserTools.at365.exe` を、AppDock.at365.exeの隣の `extensions/Applet.WebBrowserTools.at365/` に配置します。更新時も配布物一式をそろえて置き換えてください。
+3. AppDockを起動し、「Applet」一覧で有効にします。操作やキーの割り当てはAppDockから行います。
+
+利用するPCにはAppDockの動作環境が必要です。詳細は[AppDockの導入案内](../AppDock.at365/README.md)を参照してください。
+
+旧DLL版から更新する場合は、同じ配置先の `Applet.WebBrowserTools.at365.dll` と `Applet.WebBrowserTools.at365.deps.json` を取り除いてください。既存のコマンドIDと送信キー設定はそのまま使えます。
+
 ## コマンド
 
 IDの共通接頭辞は `at365.web-browser-tools.` です。
 
-| ID | 操作 | 送信方法／既定キー |
+| ID | 操作 | ブラウザーへの操作／既定の送信キー |
 | --- | --- | --- |
 | close-tab | タブを閉じる | Ctrl+F4 |
-| back | 戻る | WM_APPCOMMAND / APPCOMMAND_BROWSER_BACKWARD (1) |
-| forward | 進む | WM_APPCOMMAND / APPCOMMAND_BROWSER_FORWARD (2) |
-| reload | リロード | WM_APPCOMMAND / APPCOMMAND_BROWSER_REFRESH (3) |
+| back | 戻る | ブラウザーの「戻る」 |
+| forward | 進む | ブラウザーの「進む」 |
+| reload | リロード | ブラウザーの「再読み込み」 |
 | super-reload | スーパーリロード | Ctrl+F5 |
 | toggle-fullscreen | 全画面を切り替え | F11 |
 | new-tab | 新しいタブを開く | Ctrl+T |
@@ -20,7 +30,7 @@ IDの共通接頭辞は `at365.web-browser-tools.` です。
 | next-tab | 次のタブへ | Ctrl+Tab |
 | restore-tab | 閉じたタブを復元 | Ctrl+Shift+T |
 
-Watchのタブ操作を引き継ぎ、通常リロードとスーパーリロードを分離しています。Watchの旧ReloadはCtrl+F5です。汎用APPCOMMAND_CLOSE/NEWはタブやブラウザウィンドウを指定する契約ではないため使用しません。
+通常リロードとスーパーリロードを別々に実行できます。Watchの旧Reloadに相当する操作はスーパーリロード（Ctrl+F5）です。
 
 ## 使い方・設定
 
@@ -28,7 +38,7 @@ AppDockで有効にして、ホストのショートカット設定で各コマ�
 
 「設定 → Applet別の設定 → WebBrowserTools.at365」で、キー送信の8コマンドを個別に変更できます。保存後すぐ反映し、IDは変わりません。「送信キー」はブラウザに送るキーで、コマンドを呼び出すグローバルキーとは別です。同じキーをグローバル登録するとブラウザへ届かない場合があるため、異なる組み合わせにしてください。
 
-記法は `Ctrl+W` / `Ctrl+Shift+T` / `Alt+Left` / `F11`。Ctrl、Alt、Shift、Winと、英数字、F1〜F24、Enter、Tab、Esc、Space、Backspace、Delete、Insert、Home、End、PageUp、PageDown、矢印キーに対応します。WinForms SendKeysの `%{F4}` のような記法は使用しません。送信自体にはWindowsのSendInputを使います。
+記法は `Ctrl+W` / `Ctrl+Shift+T` / `Alt+Left` / `F11`。Ctrl、Alt、Shift、Winと、英数字、F1〜F24、Enter、Tab、Esc、Space、Backspace、Delete、Insert、Home、End、PageUp、PageDown、矢印キーに対応します。WinForms SendKeysの `%{F4}` のような記法は使用しません。
 
 不正な設定変更は直前の有効なコマンド設定を保持します。ただし不正値がホストに保存された状態で再起動すると有効化に失敗するので、設定欄を修正してから再起動してください。
 
@@ -61,39 +71,10 @@ AppDockで有効にして、ホストのショートカット設定で各コマ�
 
 ホイールの実行予約または実行中の処理は1件に限定し、処理が追いつかない間の追加入力は捨てて後追いを防ぎます。最後の入力から100ms経過、右ボタン解放、最前面変更、設定変更、停止で未送信の処理を取り消します。キー送信では物理的に押された修飾キー等の解放を待つことがあります。Windowsやブラウザに送信済みの操作は取り消せません。送信キーをAppDockのグローバルキーに登録した場合の再入防止は、ホストからの呼び出しを短時間抑止して行い、ジェスチャーの連続実行は遅延させません。
 
-待機表示はWatchのXAMLを引き継ぎ、黒い角丸背景・白文字・方向矢印・コマンド名・プロセス名を表示します。「待機表示の位置」で「ジェスチャー開始地点」（既定）または「対象ブラウザーの中央」を選択できます。「待機表示の不透明度」は既定0.45、0.1～1.0で調整でき、小さいほど薄く表示します。位置と大きさを確定してから表示し、クリック透過・フォーカス非取得です。方向転換で非表示になります。これらの設定も保存後すぐ反映します。
+待機表示には黒い角丸背景・白文字・方向矢印・コマンド名・プロセス名を表示します。「待機表示の位置」で「ジェスチャー開始地点」（既定）または「対象ブラウザーの中央」を選択できます。「待機表示の不透明度」は既定0.45、0.1～1.0で調整でき、小さいほど薄く表示します。位置と大きさを確定してから表示し、クリック透過・フォーカス非取得です。方向転換で非表示になります。これらの設定も保存後すぐ反映します。
 
 開始したブラウザが最前面から外れるとキャンセルし、別のブラウザへ送信しません。設定保存も待機中のジェスチャーをキャンセルします。Watchの元のジェスチャー機能を同時に使うと右ボタンのフックが競合するため、一方だけを有効にしてください。
 
-## ビルド・発行・配置
+---
 
-開発には.NET SDK 10と、隣の `../AppDock.at365` にSDK/Runtimeのソースが必要です。
-
-```bat
-publish.bat
-deploy.bat "C:\Apps\AppDock.at365"
-```
-
-[publish.bat](publish.bat)はReleaseの自己完結単一EXEとmanifestを `publish/Applet.WebBrowserTools.at365` へ発行します。任意の発行先やSDKの場所も指定できます。
-
-```bat
-publish.bat -OutputDirectory "C:\Temp\WebBrowserTools" -AppDockRoot "C:\Source\AppDock.at365"
-```
-
-[deploy.bat](deploy.bat)は標準の発行先から、指定ホストの `extensions/Applet.WebBrowserTools.at365` へEXE・manifestを配置し、旧版のDLL・deps.jsonを除去します。配置前に対象AppDockを終了してください。ホストのEXEと設定は変更しません。SDK/RuntimeはAppletのEXEに含まれます。既存のコマンドIDと送信キー設定は引き続き使用できます。
-
-引数を省略する場合は[deploy.local.txt.example](deploy.local.txt.example)を `deploy.local.txt` にコピーし、1行目にホストフォルダーを記入します。引数が優先され、両方未指定なら使用方法を表示して終了します。独自の発行先はdeployの入力にはならないため、配置前に通常のpublishも実行してください。
-
-配置後にAppDockを起動し直して有効化してください。
-
-## 検証
-
-```powershell
-dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release
-dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --native
-dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --gestures
-# AppDock側のローカルNodeを使用
-..\AppDock.at365\.tools\node\24.21.0\node.exe scripts\test-host.cjs ..\AppDock.at365 ..\AppDock.at365\publish\win-unpacked\AppDock.at365.exe
-```
-
-`--native`と`--gestures`は一時的な専用ウィンドウを最前面にして入力を検証します。後者はカーソルを動かして終了時に位置を戻し、待機表示を`artifacts/gesture-indicator.png`へ保存します。GUI/入力テストは最前面が競合しないよう1本ずつ実行してください。ホストテストは独立した `artifacts` 配下の設定だけを使います。実測と未検証事項は[VERIFICATION.md](VERIFICATION.md)を参照してください。
+開発・ビルドについては[開発ガイド](DEVELOPMENT.md)を参照してください。
