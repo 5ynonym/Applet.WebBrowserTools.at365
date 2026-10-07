@@ -11,7 +11,10 @@ internal readonly record struct GesturePoint(int X, int Y);
 internal sealed record BrowserTarget(nint Window, string Process);
 internal sealed record BrowserBinding(BrowserCommand Command, string? Keys, KeyChord? Chord);
 internal sealed record GestureInvocation(BrowserBinding Binding, BrowserTarget Target, IReadOnlySet<string> Browsers,
-    CancellationToken Cancellation = default);
+    CancellationToken Cancellation = default)
+{
+    internal bool RequireChromiumWindowClass { get; init; } = true;
+}
 internal sealed record GestureConfiguration(bool Enabled, IReadOnlySet<string> Browsers,
     IReadOnlyDictionary<GestureDirection, BrowserBinding?> Bindings,
     IReadOnlyDictionary<GestureWheel, BrowserBinding?> WheelBindings)
@@ -20,6 +23,7 @@ internal sealed record GestureConfiguration(bool Enabled, IReadOnlySet<string> B
     internal double Opacity { get; init; } = 0.45;
     internal int Distance { get; init; } = 50;
     internal int WheelDelayMs { get; init; }
+    internal bool RequireChromiumWindowClass { get; init; } = true;
     internal IReadOnlyDictionary<GestureClick, BrowserBinding?> ClickBindings { get; init; } = new Dictionary<GestureClick, BrowserBinding?>();
     internal static readonly string[] Names = ["上", "下", "左", "右"];
     internal static readonly string[] Marks = ["⬆️", "⬇️", "⬅️", "➡️"];

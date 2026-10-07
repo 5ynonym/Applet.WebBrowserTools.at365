@@ -39,11 +39,14 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
         {
             if (!active) return;
             var browsers = BrowserPlatform.ParseBrowsers(context.Settings.Get("browserProcesses", BrowserPlatform.DefaultBrowsers));
+            var requireChromiumWindowClass = context.Settings.Get("requireChromiumWindowClass", true);
             // Validate every key before replacing any handler. Invalid edits retain the last working set.
             var bindings = BrowserCommand.All.Select(command => (Command: command,
                 Keys: command.DefaultKeys is null ? null : context.Settings.Get(command.SettingKey, command.DefaultKeys)))
                 .Select(binding => new BrowserBinding(binding.Command, binding.Keys, binding.Keys is null ? null : KeyChord.Parse(binding.Keys))).ToArray();
-            var configuration = GestureConfiguration.Read(context.Settings, browsers, bindings);
+            var configuration = GestureConfiguration.Read(context.Settings, browsers, bindings) with {
+                RequireChromiumWindowClass = requireChromiumWindowClass
+            };
             var nextLifetime = new CancellationTokenSource();
             var nextToken = nextLifetime.Token;
             try { await gestures.ConfigureAsync(configuration, invocation => ExecuteGesture(invocation, nextToken)); }
@@ -59,7 +62,8 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
                     try {
                         ct.ThrowIfCancellationRequested();
                         if (Environment.TickCount64 < Interlocked.Read(ref gestureKeyGuardUntil)) return;
-                        if (active) await platform.ExecuteAsync(binding.Command.AppCommand, binding.Chord, browsers, ct);
+                        if (active) await platform.ExecuteAsync(binding.Command.AppCommand, binding.Chord, browsers, ct,
+                            requireChromiumWindowClass: requireChromiumWindowClass);
                     }
                     finally { gate.Release(); }
                 })).ToArray(), token);
@@ -67,6 +71,7 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
                 "ブラウザを最前面にして、右ボタンを押しながら上下左右へ移動し、離すと実行します。方向転換でキャンセル。右ボタン＋ホイール上下・左/中クリックも割り当て可能。設定の変更は保存後すぐ反映されます。",
                 bindings.Select(b => new PanelFact(b.Command.Title, b.Keys ?? $"WM_APPCOMMAND ({b.Command.AppCommand})"))
                     .Concat([new PanelFact("マウスジェスチャー", configuration.Enabled ? "有効（右ボタン）" : "無効")])
+                    .Concat([new PanelFact("Chromiumウィンドウの確認", configuration.RequireChromiumWindowClass ? "有効" : "EXE名のみ")])
                     .Concat([new PanelFact("待機表示の位置", configuration.Placement == IndicatorPlacement.BrowserCenter ? "対象ブラウザーの中央" : "ジェスチャー開始地点"),
                         new PanelFact("待機表示の不透明度", Math.Round(configuration.Opacity * 100) + "%")])
                     .Concat([new PanelFact("ジェスチャーの移動距離", configuration.Distance + "px")])
@@ -95,7 +100,7 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
                     if (invocation.Binding.Chord is not null)
                         Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
                     await platform.ExecuteAsync(invocation.Binding.Command.AppCommand, invocation.Binding.Chord,
-                        invocation.Browsers, token, invocation.Target.Window);
+                        invocation.Browsers, token, invocation.Target.Window, invocation.RequireChromiumWindowClass);
                     if (invocation.Binding.Chord is not null)
                         Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
                 }

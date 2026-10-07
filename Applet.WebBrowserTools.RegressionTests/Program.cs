@@ -20,12 +20,15 @@ internal static partial class Program
                 Throws(() => KeyChord.Parse(value));
             return Task.CompletedTask;
         });
-        await Test("browser gate excludes Electron, unrelated applications and non-browser windows", () => {
-            var browsers = BrowserPlatform.ParseBrowsers("chrome.exe, MSEDGE");
+        await Test("browser gate uses the EXE whitelist and optional Chromium window check", () => {
+            var browsers = BrowserPlatform.ParseBrowsers("chrome.exe, MSEDGE, firefox");
             Check(BrowserPlatform.IsBrowser("chrome", "Chrome_WidgetWin_1", browsers));
             Check(BrowserPlatform.IsBrowser("msedge", "Chrome_WidgetWin_1", browsers));
             Check(!BrowserPlatform.IsBrowser("AppDock.at365", "Chrome_WidgetWin_1", browsers));
             Check(!BrowserPlatform.IsBrowser("chrome", "Notepad", browsers));
+            Check(!BrowserPlatform.IsBrowser("firefox", "MozillaWindowClass", browsers));
+            Check(BrowserPlatform.IsBrowser("firefox", "MozillaWindowClass", browsers, requireChromiumWindowClass: false));
+            Check(!BrowserPlatform.IsBrowser("notepad", "Notepad", browsers, requireChromiumWindowClass: false));
             foreach (var value in new[] { "", "chrome,", "C:\\chrome.exe", "../chrome", "chrome*" }) Throws(() => BrowserPlatform.ParseBrowsers(value));
             return Task.CompletedTask;
         });
@@ -50,6 +53,22 @@ internal static partial class Program
             await Reject(() => ctx.Change("keys.close-tab", "invalid")); await ctx.Execute("close-tab"); Check(platform.Chord!.Key == 'W');
             await ctx.Change("keys.close-tab", "Ctrl+F4"); await ctx.Change("browserProcesses", "custom.exe");
             await ctx.Execute("close-tab"); Check(platform.Browsers!.SetEquals(new[] { "custom" }));
+            await applet.DeactivateAsync(default);
+        });
+        await Test("EXE-only target setting updates commands and gestures", async () => {
+            var ctx = new FakeContext(); var platform = new FakePlatform(); var gestures = new FakeGestures();
+            var applet = new WebBrowserToolsApplet(platform, gestures);
+            await applet.ActivateAsync(ctx, default);
+            Check(gestures.Configuration!.RequireChromiumWindowClass);
+            await ctx.Change("requireChromiumWindowClass", false);
+            Check(!gestures.Configuration!.RequireChromiumWindowClass);
+            await ctx.Execute("close-tab");
+            Check(!platform.RequireChromiumWindowClass);
+            await gestures.Invoke(GestureDirection.Left);
+            Check(!platform.RequireChromiumWindowClass);
+            await applet.DeactivateAsync(default);
+            await applet.ActivateAsync(ctx, default);
+            Check(!gestures.Configuration!.RequireChromiumWindowClass);
             await applet.DeactivateAsync(default);
         });
         await Test("cancellation, deactivation and restart", async () => {
@@ -182,8 +201,14 @@ internal static partial class Program
     private sealed class FakePlatform : IBrowserPlatform
     {
         public int Calls; public int? Message; public KeyChord? Chord; public IReadOnlySet<string>? Browsers; public nint ExpectedTarget;
-        public Task ExecuteAsync(int? message, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token, nint expectedTarget = 0)
-        { Calls++; Message = message; Chord = chord; Browsers = browsers; ExpectedTarget = expectedTarget; return Task.CompletedTask; }
+        public bool RequireChromiumWindowClass;
+        public Task ExecuteAsync(int? message, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token,
+            nint expectedTarget = 0, bool requireChromiumWindowClass = true)
+        {
+            Calls++; Message = message; Chord = chord; Browsers = browsers; ExpectedTarget = expectedTarget;
+            RequireChromiumWindowClass = requireChromiumWindowClass;
+            return Task.CompletedTask;
+        }
     }
     private sealed class FakeGestures : IGestureService
     {
@@ -193,8 +218,14 @@ internal static partial class Program
         public Task ConfigureAsync(GestureConfiguration configuration, Func<GestureInvocation, Task> execute)
         { Configuration = configuration; Execute = execute; Stopped = false; return Task.CompletedTask; }
         public Task StopAsync() { Stopped = true; return Task.CompletedTask; }
-        public Task Invoke(GestureDirection direction) => Execute!(new(Configuration!.Bindings[direction]!, new(123, "chrome.exe"), Configuration.Browsers));
-        public Task InvokeWheel(GestureWheel direction) => Execute!(new(Configuration!.WheelBindings[direction]!, new(123, "chrome.exe"), Configuration.Browsers));
-        public Task InvokeClick(GestureClick button) => Execute!(new(Configuration!.ClickBindings[button]!, new(123, "chrome.exe"), Configuration.Browsers));
+        public Task Invoke(GestureDirection direction) => Execute!(new(Configuration!.Bindings[direction]!, new(123, "chrome.exe"), Configuration.Browsers) {
+            RequireChromiumWindowClass = Configuration.RequireChromiumWindowClass
+        });
+        public Task InvokeWheel(GestureWheel direction) => Execute!(new(Configuration!.WheelBindings[direction]!, new(123, "chrome.exe"), Configuration.Browsers) {
+            RequireChromiumWindowClass = Configuration.RequireChromiumWindowClass
+        });
+        public Task InvokeClick(GestureClick button) => Execute!(new(Configuration!.ClickBindings[button]!, new(123, "chrome.exe"), Configuration.Browsers) {
+            RequireChromiumWindowClass = Configuration.RequireChromiumWindowClass
+        });
     }
 }

@@ -3,11 +3,11 @@
     "id":  "at365.web-browser-tools",
     "name":  "Applet.WebBrowserTools.at365",
     "displayName":  "WebBrowserTools.at365",
-    "version":  "0.2.3",
+    "version":  "0.2.4",
     "minimumHostVersion":  "0.6.0",
     "runtime":  "native",
     "entry":  "Applet.WebBrowserTools.at365.exe",
-    "description":  "Chromiumブラウザの操作と右ボタンによる上下左右のマウスジェスチャー。",
+    "description":  "既定でChromiumブラウザを対象にする操作と、右ボタンによる上下左右のマウスジェスチャー。",
     "capabilities":  [
                          "ui",
                          "settings",
@@ -66,6 +66,13 @@
                          "default":  "chrome, msedge, brave, vivaldi, opera, chromium, thorium",
                          "description":  "カンマ区切り。最前面のChromiumウィンドウに限って操作します。",
                          "type":  "string"
+                     },
+                     {
+                         "title":  "Chromiumウィンドウのみを対象にする",
+                         "key":  "requireChromiumWindowClass",
+                         "default":  true,
+                         "description":  "有効ではChromiumのウィンドウクラスも確認します。無効では、上のプロセス名に一致するアプリを対象にします。",
+                         "type":  "boolean"
                      },
                      {
                          "title":  "マウスジェスチャーを有効にする",

@@ -85,7 +85,8 @@ internal sealed class MouseGestureService(Dispatcher dispatcher) : IGestureServi
             }
             if (message == 0x0204 && !ready && Enabled)
             {
-                target = BrowserPlatform.TryGestureTarget(configuration!.Browsers, mouse.Point);
+                target = BrowserPlatform.TryGestureTarget(configuration!.Browsers,
+                    configuration.RequireChromiumWindowClass, mouse.Point);
                 if (target is not null)
                 {
                     origin = mouse.Point; state.Begin(origin, configuration!.Distance); ready = true; wheelMode = false; clickMode = false; wheelDelta = 0;
@@ -144,7 +145,9 @@ internal sealed class MouseGestureService(Dispatcher dispatcher) : IGestureServi
         var capturedRevision = revision;
         var binding = !wheelMode && !clickMode && !state.Cancelled && state.Direction is { } direction ? configuration!.Bindings[direction] : null;
         var replay = !wheelMode && !clickMode && !state.Cancelled && state.Direction is null;
-        var invocation = binding is null ? null : new GestureInvocation(binding, capturedTarget, configuration!.Browsers);
+        var invocation = binding is null ? null : new GestureInvocation(binding, capturedTarget, configuration!.Browsers) {
+            RequireChromiumWindowClass = configuration.RequireChromiumWindowClass
+        };
         var action = execute;
         CancelWheel();
         CancelClick();
@@ -173,7 +176,9 @@ internal sealed class MouseGestureService(Dispatcher dispatcher) : IGestureServi
         if (binding is null || clickScheduled || clickInFlight) return;
         clickLifetime ??= new CancellationTokenSource();
         var clickToken = clickLifetime.Token;
-        var invocation = new GestureInvocation(binding, target!, configuration.Browsers, clickToken);
+        var invocation = new GestureInvocation(binding, target!, configuration.Browsers, clickToken) {
+            RequireChromiumWindowClass = configuration.RequireChromiumWindowClass
+        };
         var capturedRevision = revision;
         var action = execute;
         clickScheduled = true;
@@ -208,7 +213,9 @@ internal sealed class MouseGestureService(Dispatcher dispatcher) : IGestureServi
         if (binding is null || wheelInFlight || wheelScheduled) return;
         wheelLifetime ??= new CancellationTokenSource();
         var wheelToken = wheelLifetime.Token;
-        var invocation = new GestureInvocation(binding, target!, configuration.Browsers, wheelToken);
+        var invocation = new GestureInvocation(binding, target!, configuration.Browsers, wheelToken) {
+            RequireChromiumWindowClass = configuration.RequireChromiumWindowClass
+        };
         var capturedRevision = revision;
         var capturedTime = lastWheelInput;
         var delayMs = configuration.WheelDelayMs;
