@@ -1,5 +1,12 @@
 # 検証結果
 
+## 2026-10-09: 更新配布物の自動生成
+
+- `codex/update-packages`で発行スクリプトだけを更新。Applet本体の版は0.2.4を維持し、`publish.bat`終了コード0。共通パッカーはAppDock 0.23.0のソースから発行。
+- `publish/update.json`のID・版をmanifestと照合し、ZIPのサイズ59398742bytesとSHA256 `467a43b0bd8a7787ca012a8739d010e2a3e0e44c43d029ca5a1a0b31b91e889f`を照合。ZIP内2ファイルすべてを通常発行フォルダーとバイト単位で比較し一致。収録: `Applet.WebBrowserTools.at365.exe`, `extension.json`。
+- 旧SDK/旧DLLの生成物が残るWatch・WindowMover・WindowsToolsでは、既存deployと一致する配布内容へ整理する処理を追加。任意のユーザーファイルの再帰削除は行わない。
+- 共通検証結果はAppDockの`artifacts/applet-update-packages.json`、発行ログは`artifacts/Applet.WebBrowserTools.at365-update-publish.log`。実利用先deploy・外部公開・pushは未実施。実GitHub/HTTP(S)/UNC配布先の確認はユーザーが後で行う。Applet固有機能・実アカウント操作の再試験は今回の発行変更の対象外。
+
 ## 2026-10-08: 実利用先へのdeploy
 
 - 配置後の実利用について、ユーザーが正常動作を確認したと報告（2026-10-08）。

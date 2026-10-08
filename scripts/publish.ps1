@@ -1,4 +1,4 @@
-param([string]$OutputDirectory, [string]$AppDockRoot)
+﻿param([string]$OutputDirectory, [string]$AppDockRoot)
 $ErrorActionPreference = 'Stop'
 $taskRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $taskOutput = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $taskRoot 'publish\Applet.WebBrowserTools.at365' }
@@ -13,3 +13,7 @@ foreach ($taskOldName in @('Applet.WebBrowserTools.at365.dll', 'Applet.WebBrowse
     if (Test-Path -LiteralPath $taskOldFile -PathType Leaf) { Remove-Item -LiteralPath $taskOldFile }
 }
 Write-Output "Applet output: $taskOutput"
+
+$taskUpdateHostRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\AppDock.at365'))
+if ($AppDockRoot) { $taskUpdateHostRoot = [IO.Path]::GetFullPath($AppDockRoot) }
+& (Join-Path $taskUpdateHostRoot 'scripts\pack-applet-update.ps1') -SourceDirectory $taskOutput -OutputDirectory (Join-Path (Split-Path $PSScriptRoot -Parent) 'publish')
