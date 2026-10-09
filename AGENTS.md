@@ -6,3 +6,4 @@
 - 旧GestureState/MouseGestureServiceの対象ブラウザ判定は比較回帰用に残すが、hostManagedGesturesでは必ず無効化する。新しい実行制限やApplet側フックを追加しない。
 - gesture呼出しの開始HWND/取消情報を実送信まで保持する。再入防止と連続操作の速さを両立し、通常経路の150ms待機をジェスチャーへ流用しない。
 - 完成した変更はmanifest/プロジェクトの版を揃えpublish.batで発行し、回帰/隔離実入力を検証する。実利用deploy/commit/push/公開は別の依頼。
+- 開発/試験生成物の保存先は`.artifacts`。作業完了時の整理はAppDockのDEVELOPMENT.mdの共通手順に従う。旧ログの内部パスは履歴値として保持する。

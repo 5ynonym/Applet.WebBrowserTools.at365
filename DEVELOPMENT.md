@@ -34,7 +34,7 @@ dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --gest
 ..\AppDock.at365\.tools\node\24.21.0\node.exe scripts\test-host.cjs ..\AppDock.at365 ..\AppDock.at365\publish\win-unpacked\AppDock.at365.exe
 ```
 
-`--native`と`--gestures`は一時的な専用ウィンドウを最前面にして入力を検証します。後者はカーソルを動かして終了時に位置を戻し、待機表示を`artifacts/gesture-indicator.png`へ保存します。GUI/入力テストは最前面が競合しないよう1本ずつ実行してください。ホストテストは独立した `artifacts` 配下の設定だけを使います。実測と未検証事項は[VERIFICATION.md](VERIFICATION.md)を参照してください。
+`--native`と`--gestures`は一時的な専用ウィンドウを最前面にして入力を検証します。後者はカーソルを動かして終了時に位置を戻し、待機表示を`.artifacts/gesture-indicator.png`へ保存します。GUI/入力テストは最前面が競合しないよう1本ずつ実行してください。ホストテストは独立した `.artifacts` 配下の設定だけを使います。実測と未検証事項は[VERIFICATION.md](VERIFICATION.md)を参照してください。
 
 ## 操作の実装
 
@@ -67,3 +67,7 @@ Web配布やGitHub Releaseには同じ発行で生成したJSONとZIPを一緒�
 既定の8ジェスチャーはブラウザー条件を保ち、更新で利用者の割り当てを書き換えない。送信先の変更、取消、キー解放、通常経路の再入防止は維持する。AppDock本体のソース変更は不要。`--native`はChromium以外のクラス/プロセスを持つ専用Windowで実送信と対象変更の中止を確認する。
 
 `--native-published <EXE>`は同じ専用Windowを使い、発行済みEXEを隔離したstdin/stdout契約で起動する。ブラウザー一覧/Chromium制限を設定通知した状態で11コマンドを実行し、開始HWND一致のジェスチャー送信・不一致の中止・正常終了を確認する。実ブラウザー/各アプリの意味的な動作や本体入力フックの試験とは分けて記録する。
+
+## 開発生成物の保存先
+
+開発・テストの生成物は`.artifacts`へ保存します。2026-10-10に旧`artifacts`を中身を保持して改名しました。過去の検証記録内の当repoの`artifacts/`は`.artifacts/`へ読み替えてください。保存済みログ/JSONの内部パスは実行当時の値として保持しています。作業完了時の整理は[AppDockの共通手順](../AppDock.at365/DEVELOPMENT.md#作業完了時のテストフォルダー整理)に従い、実行中・状態不明・未解決の失敗記録・再利用する資料を保持します。

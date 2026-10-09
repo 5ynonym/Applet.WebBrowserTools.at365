@@ -10,7 +10,7 @@ const { _electron: electron } = require(
 const { createDefaultSettings } = require(
   path.join(host, "out/main/shared/settings-schema.js"),
 );
-const profile = path.join(root, "artifacts", `host-${Date.now()}`),
+const profile = path.join(root, ".artifacts", `host-${Date.now()}`),
   folder = path.join(profile, "extensions/Applet.WebBrowserTools.at365");
 fs.mkdirSync(folder, { recursive: true });
 for (const name of ["extension.json", "Applet.WebBrowserTools.at365.exe"])

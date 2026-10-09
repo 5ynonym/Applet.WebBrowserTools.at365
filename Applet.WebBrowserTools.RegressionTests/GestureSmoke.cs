@@ -107,7 +107,7 @@ internal static partial class NativeSmoke
             Check(Math.Abs(overlay.Opacity - 0.45) < 0.001, "Overlay opacity did not decrease");
             var style = GetWindowLong(handle, -20);
             Check((style & (0x20 | 0x08000000 | 0x80)) == (0x20 | 0x08000000 | 0x80), "Overlay styles differ");
-            var folder = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../artifacts"));
+            var folder = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.artifacts"));
             Directory.CreateDirectory(folder);
             GetWindowRect(handle, out var rect);
             using (var bitmap = new Bitmap(rect.Right - rect.Left, rect.Bottom - rect.Top)) {
