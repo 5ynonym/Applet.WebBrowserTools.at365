@@ -8,8 +8,7 @@ namespace Applets.WebBrowserTools;
 
 internal interface IBrowserPlatform
 {
-    Task ExecuteAsync(int? appCommand, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token,
-        nint expectedTarget = 0, bool requireChromiumWindowClass = true);
+    Task ExecuteAsync(int? appCommand, KeyChord? chord, CancellationToken token, nint expectedTarget = 0);
 }
 
 internal sealed class BrowserPlatform : IBrowserPlatform
@@ -30,20 +29,19 @@ internal sealed class BrowserPlatform : IBrowserPlatform
         browsers.Contains(process) && (!requireChromiumWindowClass
             || windowClass.StartsWith("Chrome_WidgetWin_", StringComparison.Ordinal));
 
-    public async Task ExecuteAsync(int? appCommand, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token,
-        nint expectedTarget = 0, bool requireChromiumWindowClass = true)
+    public async Task ExecuteAsync(int? appCommand, KeyChord? chord, CancellationToken token, nint expectedTarget = 0)
     {
         token.ThrowIfCancellationRequested();
-        var target = Target(browsers, requireChromiumWindowClass);
+        var target = ForegroundTarget().Window;
         if (expectedTarget != 0 && target != expectedTarget)
-            throw new InvalidOperationException("ジェスチャーを開始したブラウザが最前面ではないため送信を中止しました。");
+            throw new InvalidOperationException("ジェスチャーを開始したウィンドウが最前面ではないため送信を中止しました。");
         if (appCommand is int command)
         {
             // Chromium checks current modifier state for browser commands as well.
             await WaitForRelease(target, null, token);
             if (SendMessageTimeout(target, 0x0319, target, new nint(command << 16), 0x0002 | 0x0020, 1000, out var handled) == 0)
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "ブラウザへメッセージを送信できませんでした。");
-            if (handled == 0) throw new InvalidOperationException("ブラウザが操作メッセージを処理しませんでした。");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "アクティブなウィンドウへメッセージを送信できませんでした。");
+            if (handled == 0) throw new InvalidOperationException("アクティブなウィンドウが操作メッセージを処理しませんでした。");
         }
         else await SendAsync(target, chord ?? throw new ArgumentNullException(nameof(chord)), token, expectedTarget == 0);
     }
@@ -63,15 +61,16 @@ internal sealed class BrowserPlatform : IBrowserPlatform
             throw new InvalidOperationException("最前面のウィンドウが変わったため送信を中止しました。");
     }
     private static bool Pressed(int key) => (GetAsyncKeyState(key) & 0x8000) != 0;
-    private static nint Target(IReadOnlySet<string> browsers, bool requireChromiumWindowClass)
-        => ForegroundTarget(browsers, requireChromiumWindowClass).Window;
-
+    // Retained only for the old, host-disabled gesture hook and its comparison tests.
     internal static BrowserTarget? TryGestureTarget(IReadOnlySet<string> browsers, bool requireChromiumWindowClass,
         GesturePoint point)
     {
         try
         {
-            var target = ForegroundTarget(browsers, requireChromiumWindowClass);
+            var target = ForegroundTarget();
+            var name = new StringBuilder(256);
+            if (GetClassName(target.Window, name, name.Capacity) == 0
+                || !IsBrowser(target.Process[..^4], name.ToString(), browsers, requireChromiumWindowClass)) return null;
             return IsPointOnTarget(target.Window, point) ? target : null;
         }
         catch (Exception error) when (error is InvalidOperationException or ArgumentException or Win32Exception) { return null; }
@@ -87,19 +86,12 @@ internal sealed class BrowserPlatform : IBrowserPlatform
     [StructLayout(LayoutKind.Sequential)] private struct WindowRect { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll", SetLastError = true)] private static extern bool GetWindowRect(nint window, out WindowRect rect);
 
-    private static BrowserTarget ForegroundTarget(IReadOnlySet<string> browsers, bool requireChromiumWindowClass)
+    private static BrowserTarget ForegroundTarget()
     {
         var window = GetForegroundWindow();
-        if (window == 0 || !IsWindowVisible(window)) throw new InvalidOperationException("ブラウザを最前面にしてください。");
+        if (window == 0 || !IsWindowVisible(window)) throw new InvalidOperationException("操作するウィンドウを最前面にしてください。");
         GetWindowThreadProcessId(window, out var pid);
         using var process = Process.GetProcessById((int)pid);
-        var name = new StringBuilder(256);
-        if (GetClassName(window, name, name.Capacity) == 0
-            || !IsBrowser(process.ProcessName, name.ToString(), browsers, requireChromiumWindowClass))
-        {
-            var target = requireChromiumWindowClass ? "対象のChromiumブラウザ" : "許可したプロセス名のアプリ";
-            throw new InvalidOperationException($"{target}を最前面にしてください。対象プロセス名はApplet設定で変更できます。");
-        }
         return new(window, process.ProcessName + ".exe");
     }
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern int GetClassName(nint window, StringBuilder name, int capacity);

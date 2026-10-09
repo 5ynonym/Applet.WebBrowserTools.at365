@@ -28,6 +28,7 @@ publish.bat -OutputDirectory "C:\Temp\WebBrowserTools" -AppDockRoot "C:\Source\A
 ```powershell
 dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release
 dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --native
+dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --native-published publish/Applet.WebBrowserTools.at365/Applet.WebBrowserTools.at365.exe
 dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --gestures
 # AppDock側のローカルNodeを使用
 ..\AppDock.at365\.tools\node\24.21.0\node.exe scripts\test-host.cjs ..\AppDock.at365 ..\AppDock.at365\publish\win-unpacked\AppDock.at365.exe
@@ -39,7 +40,7 @@ dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --gest
 
 Watchのタブ操作を引き継ぎ、通常リロードとスーパーリロードを分離しています。Watchの旧ReloadはCtrl+F5です。汎用APPCOMMAND_CLOSE/NEWはタブやブラウザウィンドウを指定する契約ではないため使用しません。
 
-戻る・進む・リロードはWM_APPCOMMANDのAPPCOMMAND_BROWSER_BACKWARD (1)、APPCOMMAND_BROWSER_FORWARD (2)、APPCOMMAND_BROWSER_REFRESH (3)を使い、キー送信はWindowsのSendInputを使用します。本体のChromium制限が有効な場合は対象プロセス名とChromiumのウィンドウクラスを両方検査します。「Chromiumウィンドウのみを対象にする」を無効にした場合は、プロセス名のホワイトリストだけで判定します。待機表示はWatchのXAMLを引き継いでいます。
+戻る・進む・リロードはWM_APPCOMMANDのAPPCOMMAND_BROWSER_BACKWARD (1)、APPCOMMAND_BROWSER_FORWARD (2)、APPCOMMAND_BROWSER_REFRESH (3)を使い、キー送信はWindowsのSendInputを使用します。v0.3.1以降は、コマンド送信先を可視の最前面ウィンドウから取得し、プロセス名/Chromiumクラスによる拒否は行いません。待機表示はWatchのXAMLを引き継いでいます。
 
 ## 文書の更新
 
@@ -58,3 +59,11 @@ Web配布やGitHub Releaseには同じ発行で生成したJSONとZIPを一緒�
 共通の入力・設定・移行・取消契約は[本体のマウスジェスチャー仕様](../AppDock.at365/docs/gestures.md)を正本とする。最低本体版は0.26.0。defaultGestureBindingsで8操作の初期値を宣言する。本体は旧フックを無効化し、対象ブラウザ設定を通知する。送信キーとコマンドIDは維持する。
 
 .NET CommandExecution.Currentにgestureの起動文脈があればexpectedTargetを渡し、CancellationTokenで未送信処理を取り消す。通常ホットキー用150ms待機をジェスチャーへ追加しない。再入経路のガードは維持する。既存GestureState/MouseGestureServiceは旧動作の回帰比較用にも残るが、本体管理時には有効にしない。
+
+## v0.3.1の送信先
+
+実行場所は本体のショートカット/ジェスチャー割り当て条件へ任せる。IBrowserPlatform.ExecuteAsyncは操作・キー・CancellationToken・開始対象HWNDだけを受け取り、ブラウザー一覧/Chromium制限を受け取らない。hostManagedGesturesでは本体が通知するbrowserProcesses/requireChromiumWindowClassを読み込まず、旧フックも必ず無効にする。旧フックだけに残る対象判定は比較回帰用であり、現行本体から実行するコマンドの制限ではない。
+
+既定の8ジェスチャーはブラウザー条件を保ち、更新で利用者の割り当てを書き換えない。送信先の変更、取消、キー解放、通常経路の再入防止は維持する。AppDock本体のソース変更は不要。`--native`はChromium以外のクラス/プロセスを持つ専用Windowで実送信と対象変更の中止を確認する。
+
+`--native-published <EXE>`は同じ専用Windowを使い、発行済みEXEを隔離したstdin/stdout契約で起動する。ブラウザー一覧/Chromium制限を設定通知した状態で11コマンドを実行し、開始HWND一致のジェスチャー送信・不一致の中止・正常終了を確認する。実ブラウザー/各アプリの意味的な動作や本体入力フックの試験とは分けて記録する。

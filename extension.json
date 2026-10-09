@@ -3,11 +3,11 @@
   "id": "at365.web-browser-tools",
   "name": "Applet.WebBrowserTools.at365",
   "displayName": "WebBrowserTools.at365",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "minimumHostVersion": "0.26.0",
   "runtime": "native",
   "entry": "Applet.WebBrowserTools.at365.exe",
-  "description": "既定でChromiumブラウザを対象にする操作と、右ボタンによる上下左右のマウスジェスチャー。",
+  "description": "ブラウザ以外でも使える、ブラウザ用の便利コマンド集。アクティブなウィンドウへ操作を送り、実行場所はショートカット・マウスジェスチャーの割り当て条件で設定できます。",
   "capabilities": [
     "ui",
     "settings",

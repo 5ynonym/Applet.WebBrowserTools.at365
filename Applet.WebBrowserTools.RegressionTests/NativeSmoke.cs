@@ -5,12 +5,12 @@ using Applets.WebBrowserTools;
 internal static partial class NativeSmoke
 {
     private delegate nint WindowProc(nint hwnd, uint message, nint wParam, nint lParam);
-    public static void Run()
+    public static void Run(string? publishedExecutable = null)
     {
         var messages = new List<int>();
         var keys = new List<int>();
         var previous = GetForegroundWindow();
-        var name = "Chrome_WidgetWin_WebBrowserToolsFixture";
+        var name = "WebBrowserToolsNonBrowserFixture";
         WindowProc callback = (hwnd, message, wParam, lParam) => {
             if (message == 0x0319) { messages.Add(((int)lParam >> 16) & 0x7ff); return 1; }
             if (message == 0x0100) keys.Add((int)wParam);
@@ -30,33 +30,46 @@ internal static partial class NativeSmoke
             if (GetForegroundWindow() != hwnd) throw new Exception("Fixture is not foreground");
             var cursor = Cursor.Position;
             var platform = new BrowserPlatform();
-            var browsers = BrowserPlatform.ParseBrowsers(Process.GetCurrentProcess().ProcessName);
             void Pump(Task task) {
                 var timer = Stopwatch.StartNew();
-                while (!task.IsCompleted) { if (timer.ElapsedMilliseconds > 5000) throw new TimeoutException(); Application.DoEvents(); Thread.Sleep(5); }
+                while (!task.IsCompleted) { if (timer.ElapsedMilliseconds > 15000) throw new TimeoutException(); Application.DoEvents(); Thread.Sleep(5); }
                 task.GetAwaiter().GetResult(); Application.DoEvents();
             }
-            foreach (var message in new[] { 1, 2, 3 }) Pump(platform.ExecuteAsync(message, null, browsers, default));
-            Pump(platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+T"), browsers, default));
+            foreach (var message in new[] { 1, 2, 3 }) Pump(platform.ExecuteAsync(message, null, default));
+            Pump(platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+T"), default));
             if (!messages.SequenceEqual(new[] { 1, 2, 3 }) || !keys.Contains('T') || (GetAsyncKeyState(0x11) & 0x8000) != 0)
                 throw new Exception("Message or key delivery/release mismatch");
             if (Cursor.Position != cursor || GetForegroundWindow() != hwnd)
                 throw new Exception($"Cursor/focus changed: cursor {cursor} -> {Cursor.Position}; foreground {hwnd} -> {GetForegroundWindow()}");
             var beforeRapid = keys.Count(k => k == 'T');
             var rapid = Stopwatch.StartNew();
-            for (var i = 0; i < 20; i++) Pump(platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+T"), browsers, default, hwnd));
+            for (var i = 0; i < 20; i++) Pump(platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+T"), default, hwnd));
             if (keys.Count(k => k == 'T') != beforeRapid + 20 || rapid.ElapsedMilliseconds >= 1000)
                 throw new Exception($"Gesture SendInput burst delayed or lost: {rapid.ElapsedMilliseconds}ms");
             Console.WriteLine($"PASS 20 gesture key sends in {rapid.ElapsedMilliseconds}ms");
             keybd_event(0x11, 0, 0, 0); Application.DoEvents();
-            var pending = platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+N"), browsers, default);
+            var pending = platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+N"), default);
             using var other = new Form { Text = "Foreground switch fixture" };
             other.Show(); other.Activate(); Application.DoEvents();
             keybd_event(0x11, 0, 2, 0);
             var rejected = false;
             try { Pump(pending); } catch (InvalidOperationException) { rejected = true; }
             if (!rejected || keys.Contains('N')) throw new Exception("Foreground switch was not rejected");
-            Console.WriteLine("PASS native WM_APPCOMMAND 1/2/3, SendInput Ctrl+T, modifier release, cursor/focus preservation and foreground-change cancellation");
+            var beforeRejected = keys.Count;
+            rejected = false;
+            try { Pump(platform.ExecuteAsync(null, KeyChord.Parse("Ctrl+N"), default, hwnd)); }
+            catch (InvalidOperationException) { rejected = true; }
+            if (!rejected || keys.Count != beforeRejected) throw new Exception("Gesture target switch was not rejected");
+            Console.WriteLine("PASS non-browser native WM_APPCOMMAND 1/2/3, SendInput Ctrl+T, modifier release, cursor/focus preservation and foreground/gesture-target cancellation");
+            if (publishedExecutable is not null)
+            {
+                other.Close(); SetForegroundWindow(hwnd); Application.DoEvents();
+                if (GetForegroundWindow() != hwnd) throw new Exception("Published fixture is not foreground");
+                messages.Clear(); keys.Clear();
+                RunPublished(publishedExecutable, hwnd, messages, keys, Pump);
+                if (GetForegroundWindow() != hwnd)
+                    throw new Exception("Published command changed focus");
+            }
         }
         finally {
             keybd_event(0x11, 0, 2, 0);

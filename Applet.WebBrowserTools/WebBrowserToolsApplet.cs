@@ -38,13 +38,17 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
         try
         {
             if (!active) return;
-            var browsers = BrowserPlatform.ParseBrowsers(context.Settings.Get("browserProcesses", BrowserPlatform.DefaultBrowsers));
-            var requireChromiumWindowClass = context.Settings.Get("requireChromiumWindowClass", true);
+            var hostManagedGestures = context.Settings.Get("hostManagedGestures", false);
+            // The host owns invocation conditions. These settings belong only to the legacy hook.
+            var browsers = BrowserPlatform.ParseBrowsers(hostManagedGestures ? BrowserPlatform.DefaultBrowsers
+                : context.Settings.Get("browserProcesses", BrowserPlatform.DefaultBrowsers));
+            var requireChromiumWindowClass = !hostManagedGestures && context.Settings.Get("requireChromiumWindowClass", true);
             // Validate every key before replacing any handler. Invalid edits retain the last working set.
             var bindings = BrowserCommand.All.Select(command => (Command: command,
                 Keys: command.DefaultKeys is null ? null : context.Settings.Get(command.SettingKey, command.DefaultKeys)))
                 .Select(binding => new BrowserBinding(binding.Command, binding.Keys, binding.Keys is null ? null : KeyChord.Parse(binding.Keys))).ToArray();
             var configuration = GestureConfiguration.Read(context.Settings, browsers, bindings) with {
+                Enabled = !hostManagedGestures && context.Settings.Get("gestures.enabled", true),
                 RequireChromiumWindowClass = requireChromiumWindowClass
             };
             var nextLifetime = new CancellationTokenSource();
@@ -65,22 +69,21 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
                         if (hostGesture is null && Environment.TickCount64 < Interlocked.Read(ref gestureKeyGuardUntil)) return;
                         if (hostGesture is not null && binding.Chord is not null)
                             Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
-                        if (active) await platform.ExecuteAsync(binding.Command.AppCommand, binding.Chord, browsers, ct,
-                            expectedTarget: hostGesture is null ? 0 : new nint(long.Parse(hostGesture.Window)),
-                            requireChromiumWindowClass: requireChromiumWindowClass);
+                        if (active) await platform.ExecuteAsync(binding.Command.AppCommand, binding.Chord, ct,
+                            expectedTarget: hostGesture is null ? 0 : new nint(long.Parse(hostGesture.Window)));
                         if (hostGesture is not null && binding.Chord is not null)
                             Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
                     }
                     finally { gate.Release(); }
                 })).ToArray(), token);
-            if (context.Settings.Get("hostManagedGestures", false)) {
+            if (hostManagedGestures) {
                 await context.Ui.ShowPanelAsync(new Panel("WebBrowserTools",
-                    "ジェスチャーと対象ブラウザはAppDock本体の「マウスジェスチャー」で設定します。ブラウザを最前面にして実行してください。",
+                    "ブラウザ以外でも使える便利コマンド集です。アクティブなウィンドウへ送信します。実行する場所はAppDock本体のショートカット・マウスジェスチャーの割り当て条件で設定してください。",
                     bindings.Select(b => new PanelFact(b.Command.Title, b.Keys ?? $"WM_APPCOMMAND ({b.Command.AppCommand})")).ToArray(), []), token);
                 return;
             }
             await context.Ui.ShowPanelAsync(new Panel("WebBrowserTools",
-                "ブラウザ操作コマンドを提供します。ジェスチャー・対象ブラウザはAppDock本体の「マウスジェスチャー」で設定します。送信キーの変更は保存後すぐ反映されます。",
+                "ブラウザ以外でも使える便利コマンド集です。アクティブなウィンドウへ送信します。実行する場所はAppDock本体の割り当て条件で設定してください。送信キーの変更は保存後すぐ反映されます。",
                 bindings.Select(b => new PanelFact(b.Command.Title, b.Keys ?? $"WM_APPCOMMAND ({b.Command.AppCommand})"))
                     .Concat([new PanelFact("マウスジェスチャー", configuration.Enabled ? "有効（右ボタン）" : "無効")])
                     .Concat([new PanelFact("Chromiumウィンドウの確認", configuration.RequireChromiumWindowClass ? "有効" : "EXE名のみ")])
@@ -112,7 +115,7 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
                     if (invocation.Binding.Chord is not null)
                         Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
                     await platform.ExecuteAsync(invocation.Binding.Command.AppCommand, invocation.Binding.Chord,
-                        invocation.Browsers, token, invocation.Target.Window, invocation.RequireChromiumWindowClass);
+                        token, invocation.Target.Window);
                     if (invocation.Binding.Chord is not null)
                         Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
                 }

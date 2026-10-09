@@ -1,5 +1,15 @@
 # 検証結果
 
+## 2026-10-09: v0.3.1 コマンドのブラウザー制限撤廃
+
+- Applet内で完結。コマンド送信のプロセス一覧/Chromiumクラス判定を除去し、可視の最前面Windowへ送信する。本体管理時は通知された旧ブラウザー設定をコマンドへ適用せず、旧Appletフックも必ず停止する。11コマンドID/送信キー/初期8ジェスチャーの条件と最低本体版0.26.0は維持。AppDock本体のソース/設定は変更していない。
+- Releaseビルドは警告/エラー0。回帰14/14成功（`artifacts/regression-0.3.1.log`）。本体管理で旧対象設定が不正でもコマンドを登録でき、非ブラウザーのgesture文脈の開始HWNDを保持すること、設定変更/取消/停止/再起動/再入防止と旧比較回帰を確認。
+- `--native-published`終了0（`artifacts/non-browser-native-0.3.1.log`）。Chromiumクラスでもブラウザープロセスでもない専用Win32 Windowで、直接APIのWM_APPCOMMAND 1/2/3、Ctrl+T、修飾キー解放、カーソル/最前面保持、待機中の対象変更とgesture開始HWND不一致による中止を確認。ジェスチャーキー20回を49msで受信。
+- 同試験で発行済み単一EXEを隔離stdin/stdout契約で起動し、browserProcesses=chrome,msedge/requireChromiumWindowClass=trueを通知した状態でも非ブラウザーWindowへ全11コマンドが届くことを確認。gestureの開始HWND一致時の送信、不一致時の未送信、キー設定の即時反映、修飾キー解放、最前面保持と終了0を確認。8送信キーはグローバル登録との競合を避けるCtrl+Shift+F13〜F20へ試験設定し、即時変更にF21を使用。既定キー対応は回帰で確認する。
+- 試験途中の前面取得失敗、カーソル座標変化、既定Ctrl+Tabの未到達は成功扱いにしていない。単独再実行で前面取得と直接APIのカーソル保持は成功。Ctrl+Tab未到達の外部登録元は未特定で、既存登録との競合を避けた専用キーで送信経路を検証した。発行EXEの長い試験では外部操作と干渉しうるカーソル座標比較を分離し、前面保持と実受信を検査する。
+- `publish.bat`終了0。manifest/csproj/feedは0.3.1。発行EXEは64,886,052bytes、SHA256 `9edd37f8ad40e1883eaa80cd4998b8b4ef1226c66e5347e1e63eca883297213a`。update.zipは59,398,933bytes、SHA256 `8e038c4cbb032a45c2abdfc753439a739dd8c767cf31a71fb9b07119dd9e8960`。feedの版/サイズ/hashと、ZIP内EXE/manifestの全ファイルhashを発行元と照合して一致。収録2ファイル、ID/初期割り当てはHEADと一致（`artifacts/package-0.3.1.json`）。差分検査成功。
+- 本体入力フック/実ブラウザー製品/任意の実アプリがキーやメッセージをどう解釈するか、管理者権限差は今回未検証。実利用deploy/commit/push/Releaseは未実施。ユーザーのブラウザーやタブを操作していない。
+
 ## 2026-10-09: 更新配布物の自動生成
 
 - `codex/update-packages`で発行スクリプトだけを更新。Applet本体の版は0.2.4を維持し、`publish.bat`終了コード0。共通パッカーはAppDock 0.23.0のソースから発行。

@@ -71,7 +71,7 @@ internal static partial class NativeSmoke
         async Task Configure(GestureConfiguration value) => await service.ConfigureAsync(value, async invocation => {
             invocations.Add(invocation.Binding.Command.Id);
             await platform.ExecuteAsync(invocation.Binding.Command.AppCommand, invocation.Binding.Chord,
-                invocation.Browsers, default, invocation.Target.Window);
+                default, invocation.Target.Window);
         });
         async Task Start() { SetCursorPos(origin.X, origin.Y); await Task.Delay(30); mouse_event(8, 0, 0, 0, 0); await Task.Delay(30); }
         async Task Move(int x, int y) {

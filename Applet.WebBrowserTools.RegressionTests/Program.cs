@@ -6,6 +6,7 @@ internal static partial class Program
     private static void Main(string[] args)
     {
         if (args is ["--native"]) { NativeSmoke.Run(); return; }
+        if (args is ["--native-published", var executable]) { NativeSmoke.Run(executable); return; }
         if (args is ["--gestures"]) { NativeSmoke.RunGestures(); return; }
         Run().GetAwaiter().GetResult();
     }
@@ -20,7 +21,7 @@ internal static partial class Program
                 Throws(() => KeyChord.Parse(value));
             return Task.CompletedTask;
         });
-        await Test("browser gate uses the EXE whitelist and optional Chromium window check", () => {
+        await Test("legacy gesture hook retains its EXE whitelist and optional Chromium window check", () => {
             var browsers = BrowserPlatform.ParseBrowsers("chrome.exe, MSEDGE, firefox");
             Check(BrowserPlatform.IsBrowser("chrome", "Chrome_WidgetWin_1", browsers));
             Check(BrowserPlatform.IsBrowser("msedge", "Chrome_WidgetWin_1", browsers));
@@ -53,10 +54,10 @@ internal static partial class Program
             Check(ids.SequenceEqual(ctx.Handlers.Keys));
             await Reject(() => ctx.Change("keys.close-tab", "invalid")); await ctx.Execute("close-tab"); Check(platform.Chord!.Key == 'W');
             await ctx.Change("keys.close-tab", "Ctrl+F4"); await ctx.Change("browserProcesses", "custom.exe");
-            await ctx.Execute("close-tab"); Check(platform.Browsers!.SetEquals(new[] { "custom" }));
+            await ctx.Execute("close-tab"); Check(platform.Chord!.Key == KeyChord.Parse("Ctrl+F4").Key);
             await applet.DeactivateAsync(default);
         });
-        await Test("EXE-only target setting updates commands and gestures", async () => {
+        await Test("legacy EXE-only setting updates the old gesture hook", async () => {
             var ctx = new FakeContext(); var platform = new FakePlatform(); var gestures = new FakeGestures();
             var applet = new WebBrowserToolsApplet(platform, gestures);
             await applet.ActivateAsync(ctx, default);
@@ -64,9 +65,9 @@ internal static partial class Program
             await ctx.Change("requireChromiumWindowClass", false);
             Check(!gestures.Configuration!.RequireChromiumWindowClass);
             await ctx.Execute("close-tab");
-            Check(!platform.RequireChromiumWindowClass);
+            Check(platform.Calls == 1);
             await gestures.Invoke(GestureDirection.Left);
-            Check(!platform.RequireChromiumWindowClass);
+            Check(platform.Calls == 2);
             await applet.DeactivateAsync(default);
             await applet.ActivateAsync(ctx, default);
             Check(!gestures.Configuration!.RequireChromiumWindowClass);
@@ -199,9 +200,10 @@ internal static partial class Program
             var applet = new WebBrowserToolsApplet(platform, gestures);
             await applet.ActivateAsync(ctx, default);
             await ctx.Change("hostManagedGestures", true);
-            await ctx.Change("gestures.enabled", false);
             Check(!gestures.Configuration!.Enabled);
-            AppDock.SDK.CommandExecution.Current = new("test", "456", "chrome", "gesture");
+            await ctx.Change("browserProcesses", "C:\\invalid\\legacy.exe");
+            await ctx.Change("requireChromiumWindowClass", true);
+            AppDock.SDK.CommandExecution.Current = new("test", "456", "notepad", "gesture");
             try { await ctx.Execute("back"); Check(platform.ExpectedTarget == 456); }
             finally { AppDock.SDK.CommandExecution.Current = null; }
             await ctx.Execute("back"); Check(platform.ExpectedTarget == 0);
@@ -214,13 +216,10 @@ internal static partial class Program
     private static async Task Reject(Func<Task> action) { try { await action(); } catch (Exception) { return; } throw new Exception("Expected rejection"); }
     private sealed class FakePlatform : IBrowserPlatform
     {
-        public int Calls; public int? Message; public KeyChord? Chord; public IReadOnlySet<string>? Browsers; public nint ExpectedTarget;
-        public bool RequireChromiumWindowClass;
-        public Task ExecuteAsync(int? message, KeyChord? chord, IReadOnlySet<string> browsers, CancellationToken token,
-            nint expectedTarget = 0, bool requireChromiumWindowClass = true)
+        public int Calls; public int? Message; public KeyChord? Chord; public nint ExpectedTarget;
+        public Task ExecuteAsync(int? message, KeyChord? chord, CancellationToken token, nint expectedTarget = 0)
         {
-            Calls++; Message = message; Chord = chord; Browsers = browsers; ExpectedTarget = expectedTarget;
-            RequireChromiumWindowClass = requireChromiumWindowClass;
+            Calls++; Message = message; Chord = chord; ExpectedTarget = expectedTarget;
             return Task.CompletedTask;
         }
     }
