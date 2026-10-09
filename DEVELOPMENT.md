@@ -39,7 +39,7 @@ dotnet run --project Applet.WebBrowserTools.RegressionTests -c Release -- --gest
 
 Watchのタブ操作を引き継ぎ、通常リロードとスーパーリロードを分離しています。Watchの旧ReloadはCtrl+F5です。汎用APPCOMMAND_CLOSE/NEWはタブやブラウザウィンドウを指定する契約ではないため使用しません。
 
-戻る・進む・リロードはWM_APPCOMMANDのAPPCOMMAND_BROWSER_BACKWARD (1)、APPCOMMAND_BROWSER_FORWARD (2)、APPCOMMAND_BROWSER_REFRESH (3)を使い、キー送信はWindowsのSendInputを使用します。既定では対象プロセス名とChromiumのウィンドウクラスを両方検査します。「Chromiumウィンドウのみを対象にする」を無効にした場合は、プロセス名のホワイトリストだけで判定します。待機表示はWatchのXAMLを引き継いでいます。
+戻る・進む・リロードはWM_APPCOMMANDのAPPCOMMAND_BROWSER_BACKWARD (1)、APPCOMMAND_BROWSER_FORWARD (2)、APPCOMMAND_BROWSER_REFRESH (3)を使い、キー送信はWindowsのSendInputを使用します。本体のChromium制限が有効な場合は対象プロセス名とChromiumのウィンドウクラスを両方検査します。「Chromiumウィンドウのみを対象にする」を無効にした場合は、プロセス名のホワイトリストだけで判定します。待機表示はWatchのXAMLを引き継いでいます。
 
 ## 文書の更新
 
@@ -52,3 +52,9 @@ READMEには動作環境・導入・操作・設定・利用上の制約を記�
 ZIP直下に`extension.json`と実行ファイル一式を置き、JSONにID・版・必要な本体版・ZIPのサイズとSHA256を記録します。`OutputDirectory`を指定できる発行スクリプトでも、指定先の配布内容を読み、更新用JSON/ZIPの出力先はこのリポジトリの`publish`です。通常配置用サブフォルダーへJSON/ZIPを混ぜず、`deploy.bat`の配置対象も増やしません。
 
 Web配布やGitHub Releaseには同じ発行で生成したJSONとZIPを一緒に置き、JSONを最後に公開してください。ソースコードの自動生成ZIPは使用しません。発行スクリプトから外部公開は行いません。[共通更新仕様](../AppDock.at365/docs/updates.md)と[配布先の確認手順](../AppDock.at365/docs/update-checklist.md)を参照してください。
+
+## v0.3.0の本体ジェスチャー連携
+
+共通の入力・設定・移行・取消契約は[本体のマウスジェスチャー仕様](../AppDock.at365/docs/gestures.md)を正本とする。最低本体版は0.26.0。defaultGestureBindingsで8操作の初期値を宣言する。本体は旧フックを無効化し、対象ブラウザ設定を通知する。送信キーとコマンドIDは維持する。
+
+.NET CommandExecution.Currentにgestureの起動文脈があればexpectedTargetを渡し、CancellationTokenで未送信処理を取り消す。通常ホットキー用150ms待機をジェスチャーへ追加しない。再入経路のガードは維持する。既存GestureState/MouseGestureServiceは旧動作の回帰比較用にも残るが、本体管理時には有効にしない。

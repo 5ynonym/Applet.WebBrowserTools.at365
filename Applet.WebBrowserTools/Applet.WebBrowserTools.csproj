@@ -10,7 +10,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyName>Applet.WebBrowserTools.at365</AssemblyName>
     <RootNamespace>Applets.WebBrowserTools</RootNamespace>
-    <Version>0.2.3</Version>
+    <Version>0.3.0</Version>
     <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
     <AppDockRoot Condition="'$(AppDockRoot)' == ''">$(MSBuildThisFileDirectory)../../AppDock.at365</AppDockRoot>
   </PropertyGroup>

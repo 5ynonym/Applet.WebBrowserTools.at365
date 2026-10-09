@@ -100,3 +100,13 @@
 初回のSDK参照はサンドボックスのアクセス制限で失敗し、通常実行環境で検証した。実ホストテストでパネルのActions省略が拒否されたため空配列を明示して修正。配置スクリプトのUTF-8 BOMなしによるWindows PowerShellでの読み取り失敗も修正後に再検証済み。
 
 実利用のブラウザ・タブ・AppDock配置先は変更していない。Chrome/Edge等の各製品で実際の履歴移動・再読み込み・タブ操作が成立すること、管理者権限差、ブラウザ独自のキーカスタマイズ、グローバルキーの競合は未検証。専用ウィンドウでの検証はWindows APIの送受信を確認するもので、各ブラウザの処理を保証するものではない。
+
+## 2026-10-09: v0.3.0 本体ジェスチャーへの移行
+
+- AppDock 0.26.0以降を最低ホスト版とし、ジェスチャーUI/対象exe/Chromium制限を本体へ統合。11コマンドと送信キーを維持し、manifestに初回の8割り当てを宣言。hostManagedGesturesでは旧フックを有効化しない。gesture呼出しの開始HWNDとCancellationTokenを実送信まで保持し、通常経路の150ms待機を加えない。
+- 回帰14/14成功。--nativeで専用WindowへのWM_APPCOMMAND 1/2/3、SendInput Ctrl+T、修飾キー解放、カーソル/前面保持、対象変更取消、20回のジェスチャーキー送信（50ms）を確認。ログは../AppDock.at365/artifacts/gestures-wbt-final.logとgestures-browser-native-final.log。
+- 更新したscripts/test-host.cjsを発行済みAppDock/本Appletに実行し終了0。artifacts/host-1791535311624/result.json。旧設定の7割り当て/距離/間隔/表示移行、11コマンド、本体設定の編集/無効化、送信キーの即時反映とApplet再起動後の保持、旧設定値の保持、停止とホストエラーなしを確認。
+- publish.batは本体の一括発行から終了0。manifest/csprojの版を0.3.0へ統一、通常EXE/manifest、update.json/update.zipを生成。6Applet入りZIPとの照合・起動成功。AppDockのVERIFICATIONとdocs/gestures.mdを共通証跡/契約の正本とする。
+- 実利用deploy、commit、push、Releaseは未実施。実ブラウザ製品のタブ/履歴操作、権限差、物理操作は未確認。旧フックのソースは既存回帰のため残し、新ホストでは停止する。
+
+- 追加確認: AppDock 0.26.1の共通スイッチ/パレットにhost試験を追従し、artifacts/host-1791540326790で移行/本体スイッチ/送信キー/再起動保持が成功。AppDock 0.26.2の発行でも本Applet 0.3.0を再発行・同梱し全ZIP照合/隔離起動成功。ユーザーの明示指示で発行後に移行変更をコミット。push/Release/実利用deployなし。

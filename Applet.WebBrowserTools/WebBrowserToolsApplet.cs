@@ -55,20 +55,32 @@ public sealed class WebBrowserToolsApplet : IAppDockExtension
             gestureLifetime = nextLifetime;
             await context.Commands.ReplaceAsync(bindings.Select(binding => new CommandRegistration(
                 context.ExtensionId + "." + binding.Command.Id, binding.Command.Title, async ct => {
+                    var hostGesture = CommandExecution.Current is { Source: "gesture" } invocation ? invocation : null;
                     // SendInput can dispatch a configured global hotkey back to this Applet.
                     // Guard that return path without delaying mouse gestures.
-                    if (Environment.TickCount64 < Interlocked.Read(ref gestureKeyGuardUntil)) return;
+                    if (hostGesture is null && Environment.TickCount64 < Interlocked.Read(ref gestureKeyGuardUntil)) return;
                     await gate.WaitAsync(ct);
                     try {
                         ct.ThrowIfCancellationRequested();
-                        if (Environment.TickCount64 < Interlocked.Read(ref gestureKeyGuardUntil)) return;
+                        if (hostGesture is null && Environment.TickCount64 < Interlocked.Read(ref gestureKeyGuardUntil)) return;
+                        if (hostGesture is not null && binding.Chord is not null)
+                            Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
                         if (active) await platform.ExecuteAsync(binding.Command.AppCommand, binding.Chord, browsers, ct,
+                            expectedTarget: hostGesture is null ? 0 : new nint(long.Parse(hostGesture.Window)),
                             requireChromiumWindowClass: requireChromiumWindowClass);
+                        if (hostGesture is not null && binding.Chord is not null)
+                            Interlocked.Exchange(ref gestureKeyGuardUntil, Environment.TickCount64 + 150);
                     }
                     finally { gate.Release(); }
                 })).ToArray(), token);
+            if (context.Settings.Get("hostManagedGestures", false)) {
+                await context.Ui.ShowPanelAsync(new Panel("WebBrowserTools",
+                    "ジェスチャーと対象ブラウザはAppDock本体の「マウスジェスチャー」で設定します。ブラウザを最前面にして実行してください。",
+                    bindings.Select(b => new PanelFact(b.Command.Title, b.Keys ?? $"WM_APPCOMMAND ({b.Command.AppCommand})")).ToArray(), []), token);
+                return;
+            }
             await context.Ui.ShowPanelAsync(new Panel("WebBrowserTools",
-                "ブラウザを最前面にして、右ボタンを押しながら上下左右へ移動し、離すと実行します。方向転換でキャンセル。右ボタン＋ホイール上下・左/中クリックも割り当て可能。設定の変更は保存後すぐ反映されます。",
+                "ブラウザ操作コマンドを提供します。ジェスチャー・対象ブラウザはAppDock本体の「マウスジェスチャー」で設定します。送信キーの変更は保存後すぐ反映されます。",
                 bindings.Select(b => new PanelFact(b.Command.Title, b.Keys ?? $"WM_APPCOMMAND ({b.Command.AppCommand})"))
                     .Concat([new PanelFact("マウスジェスチャー", configuration.Enabled ? "有効（右ボタン）" : "無効")])
                     .Concat([new PanelFact("Chromiumウィンドウの確認", configuration.RequireChromiumWindowClass ? "有効" : "EXE名のみ")])

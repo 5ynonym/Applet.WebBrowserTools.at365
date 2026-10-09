@@ -29,7 +29,8 @@ internal static partial class Program
             Check(!BrowserPlatform.IsBrowser("firefox", "MozillaWindowClass", browsers));
             Check(BrowserPlatform.IsBrowser("firefox", "MozillaWindowClass", browsers, requireChromiumWindowClass: false));
             Check(!BrowserPlatform.IsBrowser("notepad", "Notepad", browsers, requireChromiumWindowClass: false));
-            foreach (var value in new[] { "", "chrome,", "C:\\chrome.exe", "../chrome", "chrome*" }) Throws(() => BrowserPlatform.ParseBrowsers(value));
+            Check(BrowserPlatform.ParseBrowsers("").Count == 0);
+            foreach (var value in new[] { "chrome,", "C:\\chrome.exe", "../chrome", "chrome*" }) Throws(() => BrowserPlatform.ParseBrowsers(value));
             return Task.CompletedTask;
         });
         await Test("all eleven commands route to expected messages and Watch keys", async () => {
@@ -191,6 +192,19 @@ internal static partial class Program
             await applet.DeactivateAsync(default); await applet.ActivateAsync(ctx, default);
             Check(gestures.Configuration!.WheelDelayMs == 200);
             await ctx.Change("gestures.wheel-delay-ms", 0); Check(gestures.Configuration!.WheelDelayMs == 0);
+            await applet.DeactivateAsync(default);
+        });
+        await Test("host-managed gestures retain command target context without enabling the old hook", async () => {
+            var ctx = new FakeContext(); var gestures = new FakeGestures(); var platform = new FakePlatform();
+            var applet = new WebBrowserToolsApplet(platform, gestures);
+            await applet.ActivateAsync(ctx, default);
+            await ctx.Change("hostManagedGestures", true);
+            await ctx.Change("gestures.enabled", false);
+            Check(!gestures.Configuration!.Enabled);
+            AppDock.SDK.CommandExecution.Current = new("test", "456", "chrome", "gesture");
+            try { await ctx.Execute("back"); Check(platform.ExpectedTarget == 456); }
+            finally { AppDock.SDK.CommandExecution.Current = null; }
+            await ctx.Execute("back"); Check(platform.ExpectedTarget == 0);
             await applet.DeactivateAsync(default);
         });
         Console.WriteLine($"{count}/{count} passed");

@@ -18,8 +18,9 @@ internal sealed class BrowserPlatform : IBrowserPlatform
     private static readonly int[] HeldModifiers = [0x10, 0x11, 0x12, 0x5B, 0x5C];
     internal static HashSet<string> ParseBrowsers(string value)
     {
+        if (string.IsNullOrWhiteSpace(value)) return new(StringComparer.OrdinalIgnoreCase);
         var names = value.Split(',', StringSplitOptions.TrimEntries);
-        if (names.Length > 32 || names.Any(n => !Regex.IsMatch(n, @"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,79}$")))
+        if (names.Length > 100 || names.Any(n => !Regex.IsMatch(n, @"^[\p{L}\p{N}_. -]{1,120}$")))
             throw new ArgumentException("ブラウザのプロセス名をカンマ区切りで指定してください（例: chrome, msedge）。");
         return names.Select(n => n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? n[..^4] : n)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -125,7 +126,7 @@ internal sealed class BrowserPlatform : IBrowserPlatform
         if (guardHostCommand) await Task.Delay(150, token);
     }
     private static Input KeyEvent(ushort key, bool up, bool extended) => new() {
-        Type = 1, Data = new InputUnion { Keyboard = new KeyboardInput { Key = key, Flags = (up ? 2u : 0) | (extended ? 1u : 0) } }
+        Type = 1, Data = new InputUnion { Keyboard = new KeyboardInput { Key = key, Flags = (up ? 2u : 0) | (extended ? 1u : 0), Extra = MouseGestureService.InputMarker } }
     };
     [StructLayout(LayoutKind.Sequential)] private struct Input { public uint Type; public InputUnion Data; }
     [StructLayout(LayoutKind.Explicit)] private struct InputUnion
