@@ -1,5 +1,7 @@
 # WebBrowserToolsの作業ルール
 
+実装時のテスト選択、コミット前の必要回帰、リリース前のコミット/プッシュ確認と検証証跡の再利用は、[本体・Applet共通手順](../AppDock.at365/docs/development-workflow.md)に従います。この文書の試験コマンドは、その段階に応じて実行します。
+
 最初に[A:の共通指示](../../AGENTS.md)、[30.PROJECT共通指示](../AGENTS.md)、[AppDockの指示](../AppDock.at365/AGENTS.md)を読む。開発の入口は[DEVELOPMENT.md](DEVELOPMENT.md)、共通契約は[Applet API](../AppDock.at365/docs/extensions.md)、[マウスジェスチャー](../AppDock.at365/docs/gestures.md)。
 
 - 本体管理のジェスチャーを使い、Applet側フックを二重起動しない。コマンドID/送信キーを維持する。v0.3.1以降、コマンドはアクティブなウィンドウへ送信し、プロセス名/Chromiumクラスで拒否しない。実行場所は本体の割り当て条件で決める。本体が通知するbrowserProcesses/requireChromiumWindowClassをコマンド送信へ適用しない。
